@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DAY RIFT - 2D 픽셀 멀티플레이 생존 건설 샌드박스</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-B_8a8D87.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DWleParq.css">
+</head>
+<body>
+  <!-- Main Pixel Canvas -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Pixel UI Overlay Container -->
+  <div id="uiContainer">
+    <!-- Top Left: Stats HUD -->
+    <div id="statsHud" class="pixel-panel">
+      <div class="stat-row">
+        <span class="stat-icon">❤️</span>
+        <div class="bar-container"><div id="hpBar" class="bar-fill hp-fill"></div></div>
+        <span id="hpText" class="stat-val">100/100</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-icon">🍗</span>
+        <div class="bar-container"><div id="hungerBar" class="bar-fill hunger-fill"></div></div>
+        <span id="hungerText" class="stat-val">100/100</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-icon">⚡</span>
+        <div class="bar-container"><div id="staminaBar" class="bar-fill stamina-fill"></div></div>
+        <span id="staminaText" class="stat-val">100/100</span>
+      </div>
+    </div>
+
+    <!-- Top Center: DAY & Clock Bar -->
+    <div id="dayClockHud" class="pixel-panel">
+      <div id="dayTitle">DAY 1</div>
+      <div id="clockBarContainer">
+        <div id="clockIndicator">☀️</div>
+        <div id="dayPhaseText">낮 (DAY)</div>
+      </div>
+    </div>
+
+    <!-- Top Right: Active Daily Event Badge -->
+    <div id="eventHud" class="pixel-panel">
+      <div class="event-header">🌐 오늘의 세계 규칙</div>
+      <div id="eventTitle" class="event-name">평범한 날</div>
+      <div id="eventDesc" class="event-desc">평화로운 세계입니다. 자원을 채집하고 보금자리를 건설하세요.</div>
+    </div>
+
+    <!-- Center: BIG DAY BANNER ALERT -->
+    <div id="dayBannerOverlay" class="day-banner-container hidden">
+      <div class="day-banner-card pixel-panel-gold">
+        <div id="bannerDayNum" class="banner-day">DAY 1</div>
+        <div class="banner-sub">새로운 세계의 규칙이 적용되었습니다</div>
+        <div id="bannerRuleTitle" class="banner-rule-title">"밤이 평소보다 2배 길어집니다"</div>
+        <div id="bannerRuleDesc" class="banner-rule-desc">어둠 속에서 위험한 몬스터들이 더 오래 사냥합니다. 횃불과 방어 시설을 갖추세요!</div>
+      </div>
+    </div>
+
+    <!-- Bottom Center: Hotbar -->
+    <div id="hotbarContainer" class="pixel-panel">
+      <div id="hotbarSlots">
+        <!-- 10 Slots populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Left Buttons & Instructions -->
+    <div id="actionHintBox" class="pixel-panel">
+      <div>[E] 인벤토리/제작</div>
+      <div>[B] 건축 모드</div>
+      <div>[C] 토지 점유/권한</div>
+      <div>[K] 캐릭터 변경</div>
+      <div>[TAB] 동시 접속자</div>
+      <div>[ENTER] 채팅</div>
+    </div>
+
+    <!-- Chat Box Overlay -->
+    <div id="chatContainer" class="pixel-panel">
+      <div id="chatMessages"></div>
+      <form id="chatForm">
+        <input type="text" id="chatInput" placeholder="메시지를 입력하세요 (Enter)..." autocomplete="off" maxlength="100">
+      </form>
+    </div>
+
+    <!-- Player List TAB Overlay -->
+    <div id="playerListOverlay" class="pixel-modal hidden">
+      <div class="pixel-modal-content pixel-panel">
+        <div class="modal-title">👥 온라인 플레이어 목록 (<span id="onlineCount">1</span>)</div>
+        <div id="playerListItems"></div>
+      </div>
+    </div>
+
+    <!-- Inventory & Crafting Modal (E) -->
+    <div id="inventoryModal" class="pixel-modal hidden">
+      <div class="pixel-modal-content pixel-panel extra-wide">
+        <div class="modal-header">
+          <span>🎒 인벤토리 &amp; 🛠️ 제작</span>
+          <button class="close-btn" id="closeInvBtn">X</button>
+        </div>
+        <div class="inv-split-container">
+          <!-- Left: Player Inventory Grid -->
+          <div class="inv-section">
+            <div class="section-title">소지 아이템</div>
+            <div id="inventoryGrid" class="item-grid"></div>
+          </div>
+          <!-- Right: Categorized Crafting -->
+          <div class="inv-section">
+            <div class="section-title">제작법</div>
+            <div class="craft-tabs">
+              <button class="craft-tab active" data-tab="tools">⛏️ 도구</button>
+              <button class="craft-tab" data-tab="buildings">🧱 건축</button>
+              <button class="craft-tab" data-tab="furniture">🪑 가구</button>
+              <button class="craft-tab" data-tab="survival">🔥 생존</button>
+            </div>
+            <div id="craftingRecipes" class="recipe-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Building Selection Palette Modal (B) -->
+    <div id="buildPaletteModal" class="pixel-modal hidden">
+      <div class="pixel-modal-content pixel-panel">
+        <div class="modal-header">
+          <span>🧱 건축 청사진 선택 모드</span>
+          <button class="close-btn" id="closeBuildBtn">X</button>
+        </div>
+        <div class="build-category-row">
+          <button class="build-cat-btn active" data-cat="walls">벽/문/창문</button>
+          <button class="build-cat-btn" data-cat="floors">바닥/지붕</button>
+          <button class="build-cat-btn" data-cat="fences">울타리/계단</button>
+          <button class="build-cat-btn" data-cat="furniture">가구/조명</button>
+        </div>
+        <div id="buildItemsGrid" class="build-grid"></div>
+        <div class="build-controls-tip">
+          💡 건축 팁: 마우스 우클릭 / [R] 로 회전, [Esc] 로 취소, 설치 시 그린 (설치 가능) / 레드 (설치 불가)
+        </div>
+      </div>
+    </div>
+
+    <!-- Land Claim & Permission Modal (C) -->
+    <div id="claimModal" class="pixel-modal hidden">
+      <div class="pixel-modal-content pixel-panel">
+        <div class="modal-header">
+          <span>🚩 토지 소유권 및 권한 관리</span>
+          <button class="close-btn" id="closeClaimBtn">X</button>
+        </div>
+        <div id="claimDetails">
+          <div id="claimStatusText">현재 위치: 자유 개척 구역</div>
+          <button id="buyClaimBtn" class="pixel-btn green-btn">🚩 현재 위치에 토지 토템 설치 (목재 20 + 돌 10)</button>
+          <hr class="pixel-hr">
+          <div class="section-title">플레이어 권한 관리 (OWNER / BUILDER / MEMBER / VISITOR)</div>
+          <div id="permissionList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Character Customizer Modal (K) -->
+    <div id="customizerModal" class="pixel-modal hidden">
+      <div class="pixel-modal-content pixel-panel">
+        <div class="modal-header">
+          <span>🎨 픽셀 플레이어 커스터마이징</span>
+          <button class="close-btn" id="closeCustomBtn">X</button>
+        </div>
+        <div class="customizer-flex">
+          <div class="customizer-preview">
+            <canvas id="customPreviewCanvas" width="96" height="96"></canvas>
+            <input type="text" id="playerNameInput" placeholder="플레이어 이름..." value="생존자1" maxlength="12">
+          </div>
+          <div class="customizer-options">
+            <div class="opt-row">
+              <label>피부색:</label>
+              <input type="color" id="skinColorPicker" value="#f5c29b">
+            </div>
+            <div class="opt-row">
+              <label>헤어 스타일:</label>
+              <select id="hairStyleSelect">
+                <option value="short">Short Hair</option>
+                <option value="long">Long Hair</option>
+                <option value="spiky">Spiky Hair</option>
+                <option value="cap">Pixel Cap</option>
+              </select>
+            </div>
+            <div class="opt-row">
+              <label>머리색:</label>
+              <input type="color" id="hairColorPicker" value="#4a2c11">
+            </div>
+            <div class="opt-row">
+              <label>상의 색상:</label>
+              <input type="color" id="topColorPicker" value="#2b5c8f">
+            </div>
+            <div class="opt-row">
+              <label>하의 색상:</label>
+              <input type="color" id="bottomColorPicker" value="#3a3a3a">
+            </div>
+            <button id="saveCustomBtn" class="pixel-btn gold-btn">저장 및 적용</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Touch Controls overlay -->
+    <div id="mobileTouchControls">
+      <div id="dpad">
+        <button class="touch-btn" id="btnUp">▲</button>
+        <div class="dpad-middle">
+          <button class="touch-btn" id="btnLeft">◄</button>
+          <button class="touch-btn" id="btnRight">►</button>
+        </div>
+        <button class="touch-btn" id="btnDown">▼</button>
+      </div>
+      <div id="touchActions">
+        <button class="touch-btn action-circle" id="btnActionF">F (채집)</button>
+        <button class="touch-btn action-circle" id="btnActionAttack">⚔️ (공격)</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
